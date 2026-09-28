@@ -1,0 +1,135 @@
+package Btth;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Scanner;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+public class HRStreamManager {
+    private List<Employee> employees = new ArrayList<>();
+    private Scanner scanner = new Scanner(System.in);
+    public HRStreamManager() {
+        employees.add(new Employee("NV01", "Nguyễn Văn An", "IT", 25000000));
+        employees.add(new Employee("NV02", "Trần Văn Bình", "IT", 26000000));
+        employees.add(new Employee("NV03", "Lê Thị Hoa", "HR", 15000000));
+        employees.add(new Employee("NV04", "Phạm Văn Cường", "SALES", 18000000));
+        employees.add(new Employee("NV05", "Đỗ Thị Mai", "SALES", 18400000));
+    }
+    public void run() {
+        int choice;
+        do {
+            showMenu();
+            System.out.print("Chọn chức năng (1-6): ");
+            try {
+                choice = Integer.parseInt(scanner.nextLine());
+                switch (choice) {
+                    case 1:
+                        addEmployee();
+                        break;
+                    case 2:
+                        displayEmployees();
+                        break;
+                    case 3:
+                        filterBySalary();
+                        break;
+                    case 4:
+                        groupByDepartment();
+                        break;
+                    case 5:
+                        averageSalaryByDepartment();
+                        break;
+                    case 6:
+                        System.out.println("Đã thoát chương trình!");
+                        break;
+                    default:
+                        System.out.println("Vui lòng chọn từ 1 đến 6!");
+                }
+            } catch (NumberFormatException e) {
+                System.out.println("Lựa chọn phải là số!");
+                choice = 0;
+            }
+        } while (choice != 6);
+    }
+    private void showMenu() {
+        System.out.println();
+        System.out.println("=========================================================");
+        System.out.println("   HỆ THỐNG PHÂN TÍCH NHÂN SỰ JAVA 8 - RIKKEI HR");
+        System.out.println("=========================================================");
+        System.out.println("1. Thêm nhân sự");
+        System.out.println("2. Danh sách Nhân sự");
+        System.out.println("3. Lọc theo lương >= X");
+        System.out.println("4. Gom nhóm theo Phòng ban");
+        System.out.println("5. Lương TB theo Phòng");
+        System.out.println("6. Thoát");
+        System.out.println("=========================================================");
+    }
+    private void addEmployee() {
+        System.out.println();
+        System.out.println("---------- THÊM NHÂN VIÊN ----------");
+        System.out.print("Nhập mã nhân viên: ");
+        String id = scanner.nextLine();
+        boolean exists = employees.stream().anyMatch(e -> e.getId().equalsIgnoreCase(id));
+        if (exists) {
+            System.out.println("Mã nhân viên đã tồn tại!");
+            return;
+        }
+        System.out.print("Nhập tên nhân viên: ");
+        String name = scanner.nextLine();
+        System.out.print("Nhập phòng ban: ");
+        String department = scanner.nextLine().toUpperCase();
+        double salary;
+        try {
+            System.out.print("Nhập mức lương: ");
+            salary = Double.parseDouble(scanner.nextLine());
+            if (salary < 0) {
+                System.out.println("Lương không được nhỏ hơn 0!");
+                return;
+            }
+        } catch (NumberFormatException e) {
+            System.out.println("Mức lương không hợp lệ!");
+            return;
+        }
+        employees.add(new Employee(id, name, department, salary));
+        System.out.println("Thêm nhân viên thành công!");
+    }
+    private void displayEmployees() {
+        System.out.println("|                         DANH SÁCH NHÂN SỰ                                  |");
+        System.out.printf("| %-8s | %-22s | %-12s | %-20s |%n", "Mã NV", "Họ tên", "Phòng ban", "Lương");
+        employees.stream().forEach(e -> System.out.printf("| %-8s | %-22s | %-12s | %,20.2f |%n", e.getId(), e.getName(), e.getDepartment(), e.getSalary()));
+        System.out.println("Tổng số nhân viên: " + employees.size());
+    }
+    private void filterBySalary() {
+        System.out.println();
+        try {
+            System.out.print("Nhập mức lương X: ");
+            double x = Double.parseDouble(scanner.nextLine());
+            Predicate<Employee> salaryPredicate = employee -> employee.getSalary() >= x;
+            List<Employee> result = employees.stream()
+                    .filter(salaryPredicate)
+                    .collect(Collectors.toList());
+            System.out.println();
+            System.out.println("===== NHÂN VIÊN CÓ LƯƠNG >= " + String.format("%,.2f", x) + " VNĐ =====");
+            if (result.isEmpty()) {
+                System.out.println("Không tìm thấy nhân viên phù hợp!");
+                return;
+            }
+            result.stream().forEach(e -> System.out.printf("%-6s | %-20s | %-8s | %,.2f VNĐ%n", e.getId(), e.getName(), e.getDepartment(), e.getSalary()));
+        } catch (NumberFormatException e) {
+            System.out.println("Mức lương không hợp lệ!");
+        }
+    }
+    private void groupByDepartment() {
+        Map<String, List<Employee>> departmentMap = employees.stream().collect(Collectors.groupingBy(Employee::getDepartment));
+        System.out.println("===== DANH SÁCH NHÂN SỰ THEO PHÒNG BAN =====");
+        departmentMap.forEach((department, list) -> {
+            System.out.println("=== PHÒNG " + department + " (" + list.size() + " NV) ===");
+            list.stream().forEach(e -> System.out.printf("%-6s | %-20s | %,.2f VNĐ%n", e.getId(), e.getName(), e.getSalary()));
+        });
+    }
+    private void averageSalaryByDepartment() {
+        Map<String, Double> averageSalary = employees.stream().collect(Collectors.groupingBy(Employee::getDepartment, Collectors.averagingDouble(Employee::getSalary)));
+        System.out.println("|              THỐNG KÊ LƯƠNG TRUNG BÌNH THEO PHÒNG BAN                 |");
+        System.out.printf("| %-15s | %-52s |%n", "Phòng Ban", "Mức Lương Trung Bình / Tháng");
+        averageSalary.forEach((department, salary) -> System.out.printf("| %-15s | %,48.2f VNĐ |%n", department, salary));
+    }
+}
